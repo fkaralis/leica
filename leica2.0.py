@@ -3,18 +3,18 @@
 # RefLineMeasStkOffset absolute value (line 58)
 # working version, not test
 
+import os.path as op
 import xml.etree.ElementTree as ET
-import math
-import pandas as pd
-import tkinter as tk
-from tkinter import filedialog
-import pathlib
+from math import pi, tan, atan
+from pandas import DataFrame as df
+from tkinter import Tk, filedialog
+from pathlib import Path
 
 # file handling -- dialog and filename
-tkroot = tk.Tk()
+tkroot = Tk()
 tkroot.withdraw()
 file_path = filedialog.askopenfilename()
-filename = pathlib.Path(file_path).stem
+filename = Path(file_path).stem
 
 # parse XML file
 tree = ET.parse(file_path)
@@ -58,25 +58,40 @@ for child in root:
 		    		rlmsho = float(elem.attrib['RefLineMeasStkHtOffset'])
 		    		rlmso = abs(float(elem.attrib['RefLineMeasStkOffset']))
 		    		rlbpmsho = hoehe - float(elem.attrib['RefLineBasePointHeight'])
-		    		rlbpdho = math.tan(float(elem.attrib['RefLineDesignSlopeRatio'])) * rlmso
+		    		rlbpdho = tan(float(elem.attrib['RefLineDesignSlopeRatio'])) * rlmso
 
-		    		row["Böschung Verhältnis Neugrad"] = rldsr * 200 / math.pi
-		    		row["Böschung Verhältnis aktuell Neugrad"] = math.atan(rlmsho/rlmso) * 200 / math.pi
+		    		row["Böschung Verhältnis Neugrad"] = rldsr * 200 / pi
+		    		row["Böschung Verhältnis aktuell Neugrad"] = atan(rlmsho/rlmso) * 200 / pi
 		    		row["Böschung Höhendifferenz"] = rlbpmsho - rlbpdho
 		    		row["Böschung HD Differenz"] = ((rlbpmsho - rlbpdho) * rlmso) / rlbpdho
 
 					# append row dict to punktlist
 		    		punktlist.append(row)
+		    		
 # # check Points
 # for key in hghthodict:
 # 	print(key, hghthodict[key])
 # 
 # print('\n','------','\n')
-# 
+
 # # check ApplicationReflineMeasures
 # print(*punktlist, sep = "\n")
 
 # output
-df = pd.DataFrame(punktlist, index = punktindexlist) 
-df.to_csv(filename + '_Böschung.csv')
-# df.to_excel(filename + '_excel.xlsx')
+def uniquify(path):
+    filename, extension = op.splitext(path)
+    counter = 1
+
+    while op.exists(path):
+        path = filename + "-" + str(counter) + extension
+        counter += 1
+
+    return path
+
+df = df(punktlist, index = punktindexlist) 
+try:
+    df.to_csv(filename + '_Böschung.csv', mode='x')
+except FileExistsError:
+    df.to_csv(uniquify(filename + '_Böschung.csv'))
+
+
